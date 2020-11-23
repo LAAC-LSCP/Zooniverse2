@@ -2,9 +2,17 @@
 
 Split audios in chunks and uploads them to zooniverse
 
+## Installation
+
+```bash
+git clone https://github.com/LAAC-LSCP/Zooniverse2.git
+cd Zooniverse2
+pip install -r requirements.txt
+```
+
 ## Usage
 
-```
+```bash
 zooniverse.py [-h] --destination DESTINATION --project-slug
                      PROJECT_SLUG --subject-set SUBJECT_SET --sample-size
                      SAMPLE_SIZE --zooniverse-login ZOONIVERSE_LOGIN
@@ -18,6 +26,11 @@ zooniverse.py [-h] --destination DESTINATION --project-slug
     <th>argument</th>
     <th>description</th>
     <th>default value</th>
+</tr>
+<tr>
+    <td>path</td>
+    <td>path to the dataset</td>
+    <td></td>
 </tr>
 <tr>
     <td>destination</td>
