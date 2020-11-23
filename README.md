@@ -5,10 +5,11 @@ Split audios in chunks and uploads them to zooniverse
 ## Usage
 
 ```
-zooniverse.py [-h] --project-slug PROJECT_NAME --subject-set DATASET
-                     --sample-size SAMPLE_SIZE --zooniverse-login
+zooniverse.py [-h] --project-slug PROJECT_SLUG --subject-set
+                     SUBJECT_SET --sample-size SAMPLE_SIZE --zooniverse-login
                      ZOONIVERSE_LOGIN --zooniverse-pwd ZOONIVERSE_PWD
                      [--threads THREADS]
+                     [--target-speaker-type {CHI,OCH,FEM,MAL}]
                      path
 ```
 
@@ -32,6 +33,11 @@ zooniverse.py [-h] --project-slug PROJECT_NAME --subject-set DATASET
     <td>sample-size</td>
     <td>how many vocalization events per recording</td>
     <td></td>
+</tr>
+<tr>
+    <td>target-speaker-type</td>
+    <td>speaker type to get chunks from</td>
+    <td>CHI</td>
 </tr>
 <tr>
     <td>zooniverse-login</td>

@@ -167,7 +167,8 @@ parser.add_argument('--subject-set', help = 'subject prefix', required = True)
 parser.add_argument('--sample-size', help = 'how many samples per recording', required = True, type = int)
 parser.add_argument('--zooniverse-login', help = 'zooniverse login', required = True)
 parser.add_argument('--zooniverse-pwd', help = 'zooniverse password', required = True)
-parser.add_argument('--threads', help = 'how many threads to run on', default = 0, type = int)
+parser.add_argument('--threads', help = 'how many threads to run on', default = 0, type = int),
+parser.add_argument('--target-speaker-type', help = 'speaker type to get chunks from', default = 'CHI', choices=['CHI', 'OCH', 'FEM', 'MAL'])
 args = parser.parse_args()
 
 pipeline = ZooniversePipeline(**vars(args))
