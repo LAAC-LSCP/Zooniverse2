@@ -1,0 +1,2 @@
+-e git://github.com/LAAC-LSCP/ChildRecordsData.git
+panoptes-client
