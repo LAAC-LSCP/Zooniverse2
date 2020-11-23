@@ -5,10 +5,10 @@ Split audios in chunks and uploads them to zooniverse
 ## Usage
 
 ```
-zooniverse.py [-h] --project-slug PROJECT_SLUG --subject-set
-                     SUBJECT_SET --sample-size SAMPLE_SIZE --zooniverse-login
-                     ZOONIVERSE_LOGIN --zooniverse-pwd ZOONIVERSE_PWD
-                     [--threads THREADS]
+zooniverse.py [-h] --destination DESTINATION --project-slug
+                     PROJECT_SLUG --subject-set SUBJECT_SET --sample-size
+                     SAMPLE_SIZE --zooniverse-login ZOONIVERSE_LOGIN
+                     --zooniverse-pwd ZOONIVERSE_PWD [--threads THREADS]
                      [--target-speaker-type {CHI,OCH,FEM,MAL}]
                      path
 ```
@@ -20,8 +20,13 @@ zooniverse.py [-h] --project-slug PROJECT_SLUG --subject-set
     <th>default value</th>
 </tr>
 <tr>
+    <td>destination</td>
+    <td>where to write the output metadata and files. metadata will be saved to $destination/chunks.csv and audio chunks to $destination/chunks.</td>
+    <td></td>
+</tr>
+<tr>
     <td>project-slug</td>
-    <td>project slug (e.g.: lucasgautheron/my-new-project)</td>
+    <td>Zooniverse project slug (e.g.: lucasgautheron/my-new-project)</td>
     <td></td>
 </tr>
 <tr>

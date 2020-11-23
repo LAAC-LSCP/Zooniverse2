@@ -128,7 +128,7 @@ class ZooniversePipeline():
             'speaker_type': self.target_speaker_type
         } for c in self.chunks])
 
-        self.chunks.to_csv('chunks.csv')
+        self.chunks.to_csv(os.path.join(self.destination, 'chunks.csv'))
 
     def upload_chunks(self):
         Panoptes.connect(username = self.zooniverse_login, password = self.zooniverse_pwd)
@@ -162,6 +162,7 @@ class ZooniversePipeline():
 
 parser = argparse.ArgumentParser(description = 'split audios un chunks and upload them to zooniverse')
 parser.add_argument('path', help = 'an integer for the accumulator')
+parser.add_argument('--destination', help = 'destination', required = True)
 parser.add_argument('--project-slug', help = 'zooniverse project name', required = True)
 parser.add_argument('--subject-set', help = 'subject prefix', required = True)
 parser.add_argument('--sample-size', help = 'how many samples per recording', required = True, type = int)
