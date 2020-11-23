@@ -53,6 +53,7 @@ class ZooniversePipeline():
         self.sample_size = int(sample_size)
         self.chunk_length = int(chunk_length)
         self.threads = int(threads)
+        self.subject_set = subject_set
         
         assert 1000 % self.chunk_length == 0, 'chunk_length should divide 1000'
 
@@ -125,22 +126,23 @@ class ZooniversePipeline():
             'offset': c.offset,
             'wav': c.getbasename('wav'),
             'mp3': c.getbasename('mp3'),
-            'speaker_type': self.target_speaker_type
+            'speaker_type': self.target_speaker_type,
+            'subject-set': self.subject_set,
+            'project-slug': self.project_slug,
         } for c in self.chunks])
 
         self.chunks.to_csv(os.path.join(self.destination, 'chunks.csv'))
 
     def upload_chunks(self):
         Panoptes.connect(username = self.zooniverse_login, password = self.zooniverse_pwd)
-
         zooniverse_project = Project.find(slug = self.project_slug)
 
+        subjects_metadata = []
         self.chunks['batch'] = self.chunks.index.map(lambda x: int(x/1000))
-
         for batch, chunks in self.chunks.groupby('batch'):
             subject_set = SubjectSet()
             subject_set.links.project = zooniverse_project
-            subject_set.display_name = "{}_batch_{}".format(args.subject_set, batch)
+            subject_set.display_name = "{}_batch_{}".format(self.subject_set, batch)
             subject_set.save()
             subjects = []
 
@@ -153,7 +155,12 @@ class ZooniversePipeline():
                 subject.save()
                 subjects.append(subject)
 
+                chunk['zooniverse_id'] = subject.id
+                subjects_metadata.append(chunk)
+
             subject_set.add(subjects)
+
+        pd.DataFrame(subjects_metadata).to_csv(os.path.join(self.destination, 'metadata.csv'))
 
     def run(self):
         self.extract_chunks()
