@@ -41,10 +41,10 @@ class Chunk():
         )
 
 class ZooniversePipeline():
-    def __init__(self, path, project_name = 'test', dataset = 'test1', zooniverse_login = '', zooniverse_pwd = '', annotation_set = 'vtc', destination = '.',
+    def __init__(self, path, project_slug = 'test', subject_set = 'test1', zooniverse_login = '', zooniverse_pwd = '', annotation_set = 'vtc', destination = '.',
             target_speaker_type = 'CHI', sample_size = 100, chunk_length = 500, threads = 0, **kwargs):
         self.project = ChildProject(path)
-        self.project_name = project_name
+        self.project_slug = project_slug
         self.zooniverse_login = zooniverse_login
         self.zooniverse_pwd = zooniverse_pwd
         self.annotation_set = annotation_set
@@ -133,14 +133,14 @@ class ZooniversePipeline():
     def upload_chunks(self):
         Panoptes.connect(username = self.zooniverse_login, password = self.zooniverse_pwd)
 
-        zooniverse_project = Project.find(slug = self.project_name)
+        zooniverse_project = Project.find(slug = self.project_slug)
 
         self.chunks['batch'] = self.chunks.index.map(lambda x: int(x/1000))
 
         for batch, chunks in self.chunks.groupby('batch'):
             subject_set = SubjectSet()
             subject_set.links.project = zooniverse_project
-            subject_set.display_name = "{}_batch_{}".format(args.dataset, batch)
+            subject_set.display_name = "{}_batch_{}".format(args.subject_set, batch)
             subject_set.save()
             subjects = []
 
@@ -162,8 +162,8 @@ class ZooniversePipeline():
 
 parser = argparse.ArgumentParser(description = 'split audios un chunks and upload them to zooniverse')
 parser.add_argument('path', help = 'an integer for the accumulator')
-parser.add_argument('--project-name', help = 'zooniverse project name', required = True)
-parser.add_argument('--dataset', help = 'subject prefix', required = True)
+parser.add_argument('--project-slug', help = 'zooniverse project name', required = True)
+parser.add_argument('--subject-set', help = 'subject prefix', required = True)
 parser.add_argument('--sample-size', help = 'how many samples per recording', required = True, type = int)
 parser.add_argument('--zooniverse-login', help = 'zooniverse login', required = True)
 parser.add_argument('--zooniverse-pwd', help = 'zooniverse password', required = True)
