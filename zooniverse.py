@@ -88,15 +88,16 @@ class ZooniversePipeline():
 
             for interval in intervals:
                 chunk = Chunk(segment['recording_filename'], interval, interval + self.chunk_length)
+                chunk_audio = audio[chunk.onset:chunk.offset].fade_in(10).fade_out(10)
 
                 wav = os.path.join(self.destination, 'chunks', chunk.getbasename('wav'))
                 mp3 = os.path.join(self.destination, 'chunks', chunk.getbasename('mp3'))
 
                 if not os.path.exists(wav):
-                    audio[chunk.onset:chunk.offset].export(wav, format = 'wav')
+                    chunk_audio.export(wav, format = 'wav')
 
                 if not os.path.exists(mp3):
-                    audio[chunk.onset:chunk.offset].export(mp3, format = 'mp3')
+                    chunk_audio.export(mp3, format = 'mp3')
 
                 chunks.append(chunk)
 
