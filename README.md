@@ -1,5 +1,11 @@
 # Zooniverse2
 
+- [Zooniverse2](#zooniverse2)
+  - [Installation](#installation)
+  - [Usage](#usage)
+    - [Chunk extraction](#chunk-extraction)
+    - [Chunk upload](#chunk-upload)
+
 Split audios in chunks and uploads them to zooniverse
 
 ## Installation
