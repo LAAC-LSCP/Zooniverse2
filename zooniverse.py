@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import datetime
 import itertools
 import multiprocessing as mp
 import os
@@ -42,7 +43,7 @@ class Chunk():
 
 class ZooniversePipeline():
     def __init__(self, path, project_slug = 'test', subject_set = 'test1', zooniverse_login = '', zooniverse_pwd = '', annotation_set = 'vtc', destination = '.',
-            target_speaker_type = 'CHI', sample_size = 100, chunk_length = 500, threads = 0, **kwargs):
+            target_speaker_type = 'CHI', sample_size = 500, chunk_length = 500, threads = 0, **kwargs):
         self.project = ChildProject(path)
         self.project_slug = project_slug
         self.zooniverse_login = zooniverse_login
@@ -128,10 +129,14 @@ class ZooniversePipeline():
             'wav': c.getbasename('wav'),
             'mp3': c.getbasename('mp3'),
             'speaker_type': self.target_speaker_type,
-            'subject-set': self.subject_set,
-            'project-slug': self.project_slug,
+            'subject_set': self.subject_set,
+            'project_slug': self.project_slug,
+            'date_extracted': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         } for c in self.chunks])
 
+        # shuffle chunks so that they can't be joined back together
+        # based on Zooniverse subject IDs
+        self.chunks = self.chunks.sample(frac=1).reset_index(drop=True)
         self.chunks.to_csv(os.path.join(self.destination, 'chunks.csv'))
 
     def upload_chunks(self):
@@ -152,7 +157,7 @@ class ZooniversePipeline():
                 subject = Subject()
                 subject.links.project = zooniverse_project
                 subject.add_location(os.path.join(self.destination, 'chunks', chunk['mp3']))
-                subject.metadata.update(chunk)
+                subject.metadata['date_extracted'] = chunk['date_extracted']
                 subject.save()
                 subjects.append(subject)
 
