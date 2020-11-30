@@ -118,7 +118,10 @@ class ZooniversePipeline():
         self.segments['segment_onset'] = self.segments['segment_onset'] + self.segments['time_seek']
         self.segments['segment_offset'] = self.segments['segment_offset'] + self.segments['time_seek']
 
-        os.makedirs(os.path.join(self.destination, 'chunks'), exist_ok = True)
+        destination_path = os.path.join(self.destination, 'chunks')
+        os.makedirs(destination_path, exist_ok = True)
+        if os.listdir(destination_path):
+            raise ValueError("destination '{}' is not empty, please choose another destination.".format(destination_path))
 
         segments = []
         for _recording, _segments in self.segments.groupby('recording_filename'):
@@ -190,14 +193,9 @@ class ZooniversePipeline():
             
             subject_set.add(subjects)
 
-            print(self.chunks)
-            print(pd.DataFrame(subjects_metadata).set_index('index'))
-
             self.chunks.update(
                 pd.DataFrame(subjects_metadata).set_index('index')
             )
-
-            print(self.chunks)
 
             self.chunks.to_csv(os.path.join(self.destination, 'chunks.csv'))
             uploaded += 1
