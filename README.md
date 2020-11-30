@@ -6,7 +6,10 @@
     - [Chunk extraction](#chunk-extraction)
     - [Chunk upload](#chunk-upload)
 
-Split audios in chunks and uploads them to zooniverse
+Split audios in chunks and uploads them to zooniverse.
+Audio chunks and metadata are saved at a location specified by the user, allowing their later association with the results derived from Zooniverse.
+
+Output metadata is stored as a dataframe, with the same format as [this example file](https://gist.github.com/lucasgautheron/4c7048ef11a05f2374ce2544b81c97d1).
 
 ## Installation
 
@@ -29,6 +32,10 @@ python zooniverse.py extract-chunks [-h] --destination DESTINATION
                                     [--threads THREADS]
                                     path
 ```
+
+If it does not exist, DESTINATION is created.
+Audio chunks are saved in wav and mp3 in `DESTINATION/chunks`.
+Metadata is stored in a file named `DESTINATION/chunks.csv`.
 
 <table>
 <tr>
@@ -84,6 +91,8 @@ python zooniverse.py upload-chunks [-h] --destination DESTINATION
                                    SUBJECT_SET [--batches BATCHES]
 ```
 
+Uploads as many batches of audio chunks as specified to Zooniverse, and updates `chunks.csv` accordingly.
+
 <table>
 <tr>
     <th>argument</th>
@@ -92,7 +101,7 @@ python zooniverse.py upload-chunks [-h] --destination DESTINATION
 </tr>
 <tr>
     <td>destination</td>
-    <td>where to write the output metadata and files. metadata will be saved to $destination/chunks.csv and audio chunks to $destination/chunks.</td>
+    <td>where to find the output metadata and files.</td>
     <td></td>
 </tr>
 <tr>
