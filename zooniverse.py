@@ -139,6 +139,8 @@ class ZooniversePipeline():
             'speaker_type': self.target_speaker_type,
             'date_extracted': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'uploaded': False,
+            'project_slug': '',
+            'subject_set': '',
             'zooniverse_id': 0
         } for c in self.chunks])
 
@@ -187,7 +189,7 @@ class ZooniversePipeline():
                 chunk['index'] = chunk_index
                 chunk['zooniverse_id'] = subject.id
                 chunk['project_slug'] = self.project_slug
-                chunk['subject_set'] = self.subject_set
+                chunk['subject_set'] = subject_set.display_name
                 chunk['uploaded'] = True
                 subjects_metadata.append(chunk)
             
