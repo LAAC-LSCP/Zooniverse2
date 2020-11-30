@@ -42,16 +42,22 @@ class Chunk():
         )
 
 class ZooniversePipeline():
-    def __init__(self, path, project_slug = 'test', subject_set = 'test1', zooniverse_login = '', zooniverse_pwd = '', annotation_set = 'vtc', destination = '.',
-            target_speaker_type = 'CHI', sample_size = 500, chunk_length = 500, threads = 0, **kwargs):
+    def __init__(self, action, destination, path = "", project_slug = 'test', subject_set = 'test1', zooniverse_login = '', zooniverse_pwd = '', annotation_set = 'vtc',
+            batch_size = 1000, target_speaker_type = 'CHI', sample_size = 500, chunk_length = 500, threads = 0, batches = 0, **kwargs):
+        
+        self.action = action
         self.project = ChildProject(path)
+
+        self.batches = int(batches)
         self.project_slug = project_slug
         self.zooniverse_login = zooniverse_login
         self.zooniverse_pwd = zooniverse_pwd
+
         self.annotation_set = annotation_set
         self.destination = destination
         self.target_speaker_type = target_speaker_type
         self.sample_size = int(sample_size)
+        self.batch_size = batch_size
         self.chunk_length = int(chunk_length)
         self.threads = int(threads)
         self.subject_set = subject_set
@@ -60,7 +66,6 @@ class ZooniversePipeline():
 
         self.chunks = []
                 
-
     def split_recording(self, segments):
         segments = segments.sample(self.sample_size).to_dict(orient = 'records')
 
@@ -119,7 +124,7 @@ class ZooniversePipeline():
         for _recording, _segments in self.segments.groupby('recording_filename'):
             segments.append(_segments.assign(recording_filename = _recording))
         
-        pool = mp.Pool(self.threads)
+        pool = mp.Pool(self.threads if self.threads > 0 else mp.cpu_count())
         self.chunks = pool.map(self.split_recording, segments)
         self.chunks = itertools.chain.from_iterable(self.chunks)
         self.chunks = pd.DataFrame([{
@@ -129,31 +134,46 @@ class ZooniversePipeline():
             'wav': c.getbasename('wav'),
             'mp3': c.getbasename('mp3'),
             'speaker_type': self.target_speaker_type,
-            'subject_set': self.subject_set,
-            'project_slug': self.project_slug,
-            'date_extracted': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            'date_extracted': datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'uploaded': False,
+            'zooniverse_id': 0
         } for c in self.chunks])
 
         # shuffle chunks so that they can't be joined back together
         # based on Zooniverse subject IDs
         self.chunks = self.chunks.sample(frac=1).reset_index(drop=True)
+        self.chunks['batch'] = self.chunks.index.map(lambda x: int(x/self.batch_size))
+        self.chunks.index.name = 'index'
         self.chunks.to_csv(os.path.join(self.destination, 'chunks.csv'))
 
     def upload_chunks(self):
+        metadata_location = os.path.join(self.destination, 'chunks.csv')
+        try:
+            self.chunks = pd.read_csv(metadata_location, index_col = 'index')
+        except:
+            raise Exception("cannot read chunk metadata in {}. Check the --destination parameter, and make sure you have extracted chunks before.".format(metadata_location))
+
         Panoptes.connect(username = self.zooniverse_login, password = self.zooniverse_pwd)
         zooniverse_project = Project.find(slug = self.project_slug)
 
         subjects_metadata = []
-        self.chunks['batch'] = self.chunks.index.map(lambda x: int(x/1000))
+        uploaded = 0
         for batch, chunks in self.chunks.groupby('batch'):
+            if chunks['uploaded'].all():
+                continue
+
             subject_set = SubjectSet()
             subject_set.links.project = zooniverse_project
             subject_set.display_name = "{}_batch_{}".format(self.subject_set, batch)
             subject_set.save()
             subjects = []
 
-            for chunk in chunks.to_dict(orient = 'records'):
-                print("uploading chunk {} ({},{})".format(chunk['recording'], chunk['onset'], chunk['offset']))
+            _chunks = chunks.to_dict(orient = 'index')
+            for chunk_index in _chunks:
+                chunk = _chunks[chunk_index]
+
+                print("uploading chunk {} ({},{}) in batch {}".format(chunk['recording'], chunk['onset'], chunk['offset'], batch))
+
                 subject = Subject()
                 subject.links.project = zooniverse_project
                 subject.add_location(os.path.join(self.destination, 'chunks', chunk['mp3']))
@@ -161,28 +181,57 @@ class ZooniversePipeline():
                 subject.save()
                 subjects.append(subject)
 
+                chunk['index'] = chunk_index
                 chunk['zooniverse_id'] = subject.id
+                chunk['project_slug'] = self.project_slug
+                chunk['subject_set'] = self.subject_set
+                chunk['uploaded'] = True
                 subjects_metadata.append(chunk)
-
+            
             subject_set.add(subjects)
 
-        pd.DataFrame(subjects_metadata).to_csv(os.path.join(self.destination, 'metadata.csv'))
+            print(self.chunks)
+            print(pd.DataFrame(subjects_metadata).set_index('index'))
+
+            self.chunks.update(
+                pd.DataFrame(subjects_metadata).set_index('index')
+            )
+
+            print(self.chunks)
+
+            self.chunks.to_csv(os.path.join(self.destination, 'chunks.csv'))
+            uploaded += 1
+
+            if self.batches > 0 and uploaded >= self.batches:
+                return
 
     def run(self):
-        self.extract_chunks()
-        self.upload_chunks()
+        if self.action == 'extract-chunks':
+            self.extract_chunks()
+        elif self.action == 'upload-chunks':
+            self.upload_chunks()
 
 
 parser = argparse.ArgumentParser(description = 'split audios un chunks and upload them to zooniverse')
-parser.add_argument('path', help = 'an integer for the accumulator')
-parser.add_argument('--destination', help = 'destination', required = True)
-parser.add_argument('--project-slug', help = 'zooniverse project name', required = True)
-parser.add_argument('--subject-set', help = 'subject prefix', required = True)
-parser.add_argument('--sample-size', help = 'how many samples per recording', required = True, type = int)
-parser.add_argument('--zooniverse-login', help = 'zooniverse login', required = True)
-parser.add_argument('--zooniverse-pwd', help = 'zooniverse password', required = True)
-parser.add_argument('--threads', help = 'how many threads to run on', default = 0, type = int),
-parser.add_argument('--target-speaker-type', help = 'speaker type to get chunks from', default = 'CHI', choices=['CHI', 'OCH', 'FEM', 'MAL'])
+subparsers = parser.add_subparsers(help = 'action', dest = 'action')
+
+parser_extraction = subparsers.add_parser('extract-chunks', help = 'extract chunks')
+parser_extraction.add_argument('path', help = 'path to the dataset')
+parser_extraction.add_argument('--destination', help = 'destination', required = True)
+parser_extraction.add_argument('--sample-size', help = 'how many samples per recording', required = True, type = int)
+parser_extraction.add_argument('--annotation-set', help = 'annotation set', default = 'vtc')
+parser_extraction.add_argument('--target-speaker-type', help = 'speaker type to get chunks from', default = 'CHI', choices=['CHI', 'OCH', 'FEM', 'MAL'])
+parser_extraction.add_argument('--batch-size', help = 'batch size', default = 1000, type = int)
+parser_extraction.add_argument('--threads', help = 'how many threads to run on', default = 0, type = int)
+
+parser_upload = subparsers.add_parser('upload-chunks', help = 'upload chunks')
+parser_upload.add_argument('--destination', help = 'destination', required = True)
+parser_upload.add_argument('--zooniverse-login', help = 'zooniverse login', required = True)
+parser_upload.add_argument('--zooniverse-pwd', help = 'zooniverse password', required = True)
+parser_upload.add_argument('--project-slug', help = 'zooniverse project name', required = True)
+parser_upload.add_argument('--subject-set', help = 'subject prefix', required = True)
+parser_upload.add_argument('--batches', help = 'amount of batches to upload', required = False, type = int, default = 0)
+
 args = parser.parse_args()
 
 pipeline = ZooniversePipeline(**vars(args))
