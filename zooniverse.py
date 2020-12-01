@@ -46,7 +46,7 @@ class ZooniversePipeline():
         self.chunks = []
                 
     def split_recording(self, segments):
-        segments = segments.sample(sample_size).to_dict(orient = 'records')
+        segments = segments.sample(self.sample_size).to_dict(orient = 'records')
 
         source = os.path.join(self.project.path, 'recordings', segments[0]['recording_filename'])
         audio = AudioSegment.from_wav(source)
@@ -61,18 +61,18 @@ class ZooniversePipeline():
                 onset = float(onset)-tgt/2
                 offset = float(offset) + tgt/2
             else:
-                new_dur,remain = check_dur((offset-onset)/1000, chunk_length/1000)
+                new_dur,remain = check_dur((offset-onset)/1000, self.chunk_length/1000)
                 onset = float(onset)-remain*1000/2
                 offset = float(offset) + remain*1000/2
 
             onset = int(onset)
             offset = int(offset)
 
-            intervals = range(onset, offset, chunk_length) 
+            intervals = range(onset, offset, self.chunk_length) 
             chunks = []
 
             for interval in intervals:
-                chunk = Chunk(segment['recording_filename'], interval, interval + chunk_length)
+                chunk = Chunk(segment['recording_filename'], interval, interval + self.chunk_length)
                 chunk_audio = audio[chunk.onset:chunk.offset].fade_in(10).fade_out(10)
 
                 wav = os.path.join(self.destination, 'chunks', chunk.getbasename('wav'))
@@ -101,6 +101,9 @@ class ZooniversePipeline():
         sample_size = int(sample_size)
         chunk_length = int(chunk_length)
         threads = int(threads)
+
+        self.sample_size = sample_size
+        self.chunk_length = chunk_length
 
         am = AnnotationManager(self.project)
         self.annotations = am.annotations
